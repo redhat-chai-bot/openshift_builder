@@ -4,9 +4,16 @@ COPY . .
 RUN hack/build.sh
 
 FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
-RUN INSTALL_PKGS=" \
+RUN . /etc/os-release && \
+    CONTAINER_RUNTIME=runc && \
+    # CentOS/RHEL 10 does not have runc as a package, so replace with crun
+    # Remove when base image is upgraded to RHEL 10
+    if [ "${PLATFORM_ID}" = "platform:el10" ]; then \
+        CONTAINER_RUNTIME=crun; \
+    fi && \
+    INSTALL_PKGS=" \
       bind-utils bsdtar findutils fuse-overlayfs git git-lfs hostname lsof \
-      netavark procps-ng runc socat tar util-linux wget which \
+      netavark procps-ng ${CONTAINER_RUNTIME} socat tar util-linux wget which \
       " && \
     yum install -y --setopt=skip_missing_names_on_install=False $INSTALL_PKGS && \
     yum clean all
